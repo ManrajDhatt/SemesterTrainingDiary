@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Diary</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        :root {
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --header-footer-bg: #000000;
+            --button-bg: #00ff87;
+            --hover-border: linear-gradient(45deg, #f2f4f1, #d7cbc6);
+            --markdown-border: linear-gradient(45deg, #eef1ec, #60efff);
+        }
+
+        [data-theme="light"] {
+            --bg-color: #fbf7f7;
+            --text-color: #000000;
+            --header-footer-bg: #7259f2;
+            --button-bg: #f8dcca;
+            --hover-border: linear-gradient(45deg, #ff7eb3, #ff758c);
+            --markdown-border: linear-gradient(45deg, #ff7eb3, #ff758c);
+        }
+
+        header {
+            background-color: var(--header-footer-bg);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            position: relative;
+        }
+
+        main {
+            display: flex;
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            min-height: calc(100vh - 200px);
+        }
+
+        .calendar-section {
+            width: 350px;
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .calendar-header button {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            padding: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .calendar-header button:disabled {
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .calendar-header h2 {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.5rem;
+        }
+
+        .calendar-day {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .calendar-day.empty {
+            visibility: hidden;
+        }
+
+        .calendar-day.disabled {
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .calendar-day.enabled {
+            color: var(--text-color);
+            cursor: pointer;
+        }
+
+        .calendar-day.enabled:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .calendar-day.selected {
+            background-color: white;
+            color: #2563eb;
+        }
+
+        .days-of-week {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: medium;
+            color: var(--text-color);
+        }
+
+        .markdown-section {
+            flex: 1;
+            border-radius: 1rem;
+            max-width: 600px;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 1rem;
+            padding-left:3rem;
+            padding-top: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        #markdown-viewer {
+            max-height: 600px; /* Set maximum height for scrolling */
+            overflow-y: auto; /* Enable vertical scrolling */
+            border-radius: 1rem; /* Apply rounded corners */
+            color: var(--text-color);
+            word-wrap: break-word;
+            padding-right: 0.5rem; /* Prevent scrollbar from clipping corners */
+        }
+
+        #markdown-viewer h1 {
+            font-size: 1.875rem;
+            font-weight: bold;
+            color: #1e40af;
+            margin-bottom: 1rem;
+        }
+
+        #markdown-viewer h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e3a8a;
+            margin: 1.5rem 0 0.75rem;
+        }
+
+        #markdown-viewer h3 {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: #1e3a8a;
+            margin: 1rem 0 0.5rem;
+        }
+
+        #markdown-viewer li {
+            margin-left: 1rem;
+            margin-bottom: 0.25rem;
+            color: #1f2937;
+        }
+
+        #markdown-viewer p {
+            margin-bottom: 0.5rem;
+            color: #1f2937;
+            line-height: 1.6;
+        }
+
+        .no-entry {
+            text-align: center;
+            padding: 4rem 0;
+            color: #4b5563;
+        }
+
+        .no-entry i {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            color: #9ca3af;
+        }
+
+        footer {
+            background-color: var(--header-footer-bg);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            width: 100%;
+        }
+
+        #themeToggle {
+            position: absolute;
+            right: 15px;
+            top: 35px;
+            padding: 10px 10px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            background-color: var(--button-bg);
+        }
+
+        #themeToggle .fas {
+            transition: color 0.3s ease;
+        }
+
+        /* Custom scrollbar styling to match theme */
+        #markdown-viewer::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #markdown-viewer::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+        }
+
+        #markdown-viewer::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        #markdown-viewer::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        @media (max-width: 768px) {
+            main {
+                flex-direction: column;
+                padding: 1rem;
+            }
+
+            .calendar-section {
+                width: 100%;
+                max-width: 350px;
+                margin: 0 auto;
+            }
+
+            .markdown-section {
+                width: 100%;
+                max-width: 100%;
+            }
+
+            #markdown-viewer {
+                max-height: 400px; /* Smaller height on mobile */
+                border-radius: 1rem;
+                padding-right: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <button id="themeToggle" onclick="toggleTheme()">
+            <i class="fas fa-sun"></i>
+            <span>Light Theme</span>
+        </button>
+        <h1>6 Month Industrial Training - Daily Diary</h1>
+    </header>
+
+    <main>
+        <div class="calendar-section">
+            <div class="calendar-header">
+                <button onclick="goToPreviousMonth()" id="prevMonth"><i class="fas fa-chevron-left"></i></button>
+                <h2 id="monthYear"></h2>
+                <button onclick="goToNextMonth()" id="nextMonth"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div class="days-of-week">
+                <div>SUN</div><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div>
+            </div>
+            <div class="calendar-grid" id="calendarGrid"></div>
+            <div class="legend" style="margin-top: 1.5rem; font-size: 0.875rem; color: var(--text-color);">
+                <div style="display: flex; gap: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="width: 1rem; height: 1rem; background-color: white; border-radius: 0.25rem;"></div>
+                        <span>Selected</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="width: 1rem; height: 1rem; border: 1px solid var(--text-color); border-radius: 0.25rem;"></div>
+                        <span>Available</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="width: 1rem; height: 1rem; background-color: #666; border-radius: 0.25rem;"></div>
+                        <span>Unavailable</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="markdown-section">
+            <div id="markdown-viewer"></div>
+        </div>
+    </main>
+
+    <footer>
+        <p>© Daily Diary - Manraj Singh Dhatt 2025.<br> All rights reserved.</p>
+    </footer>
+
+    <script>
+        const monthsData = [
+            { name: 'JANUARY', year: 2025, days: 31, startDay: 3 }, // Jan 1, 2025 is Wednesday
+            { name: 'FEBRUARY', year: 2025, days: 28, startDay: 6 }, // Feb 1, 2025 is Saturday
+            { name: 'MARCH', year: 2025, days: 31, startDay: 6 }, // Mar 1, 2025 is Saturday
+            { name: 'APRIL', year: 2025, days: 30, startDay: 2 }, // Apr 1, 2025 is Tuesday
+            { name: 'MAY', year: 2025, days: 31, startDay: 4 }  // May 1, 2025 is Thursday
+        ];
+
+        let currentMonth = 0;
+        let selectedDate = null;
+
+        function isDateEnabled(day, month) {
+            const date = new Date(2025, month, day);
+            const startDate = new Date(2025, 0, 15); // Jan 15, 2025
+            const endDate = new Date(2025, 4, 23);  // May 23, 2025
+            const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
+            return date >= startDate && date <= endDate && dayOfWeek !== 0 && dayOfWeek !== 6;
+        }
+
+        function formatDateKey(day, month) {
+            const monthNum = month + 1;
+            return `2025-${monthNum.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+        }
+
+        function renderCalendar() {
+            const monthData = monthsData[currentMonth];
+            const daysInMonth = monthData.days;
+            const startDay = monthData.startDay;
+            const totalCells = Math.ceil((daysInMonth + startDay) / 7) * 7;
+            const calendarGrid = document.getElementById('calendarGrid');
+            calendarGrid.innerHTML = '';
+
+            document.getElementById('monthYear').textContent = `${monthData.name} ${monthData.year}`;
+            document.getElementById('prevMonth').disabled = currentMonth === 0;
+            document.getElementById('nextMonth').disabled = currentMonth === monthsData.length - 1;
+
+            for (let i = 0; i < totalCells; i++) {
+                const dayNumber = i - startDay + 1;
+                const isEmpty = dayNumber <= 0 || dayNumber > daysInMonth;
+                const isEnabled = !isEmpty && isDateEnabled(dayNumber, currentMonth);
+                const dateKey = formatDateKey(dayNumber, currentMonth);
+                const isSelected = selectedDate === dateKey;
+
+                const dayDiv = document.createElement('div');
+                dayDiv.className = `calendar-day ${isEmpty ? 'empty' : ''} ${!isEmpty && !isEnabled ? 'disabled' : ''} ${isEnabled ? 'enabled' : ''} ${isSelected ? 'selected' : ''}`;
+                dayDiv.textContent = isEmpty ? '' : dayNumber;
+
+                if (isEnabled) {
+                    dayDiv.onclick = () => {
+                        selectedDate = dateKey;
+                        renderCalendar();
+                        showMarkdown(dateKey);
+                    };
+                }
+
+                calendarGrid.appendChild(dayDiv);
+            }
+        }
+
+        function goToPreviousMonth() {
+            if (currentMonth > 0) {
+                currentMonth--;
+                selectedDate = null;
+                renderCalendar();
+                showMarkdown(null);
+            }
+        }
+
+        function goToNextMonth() {
+            if (currentMonth < monthsData.length - 1) {
+                currentMonth++;
+                selectedDate = null;
+                renderCalendar();
+                showMarkdown(null);
+            }
+        }
+
+        async function showMarkdown(dateKey) {
+            const viewer = document.getElementById('markdown-viewer');
+            const fileMap = {
+                '2025-01-15': '/pdfs/day1_.md',
+                '2025-01-16': '/pdfs/day_2.md',
+                '2025-01-17': '/pdfs/day_3.md',
+                '2025-01-20': '/pdfs/day_4.md',
+                '2025-01-21': '/pdfs/day_5.md',
+                '2025-01-22': '/pdfs/day_6.md',
+                '2025-01-23': '/pdfs/day_7.md',
+                '2025-01-24': '/pdfs/day_8.md',
+                '2025-01-27': '/pdfs/day_9.md',
+                '2025-01-28': '/pdfs/day_10.md',
+                '2025-01-29': '/pdfs/day_11.md',
+                '2025-01-30': '/pdfs/day_12.md',
+                '2025-01-31': '/pdfs/day_13.md',
+                '2025-02-03': '/pdfs/day_14_3_feb.md',
+                '2025-02-04': '/pdfs/day_15_4_feb.md',
+                '2025-02-05': '/pdfs/day_16_5_feb.md',
+                '2025-02-06': '/pdfs/day_17_6_feb.md',
+                '2025-02-07': '/pdfs/day_18_7_feb.md',
+
+
+                 '2025-03-20': '/pdfs/20_march_2025.md',
+                '2025-03-21': '/pdfs/21_march_2025.md'
+
+            };
+
+            if (!dateKey) {
+                viewer.innerHTML = `
+                    <div class="no-entry">
+                        <i class="far fa-calendar-alt"></i>
+                        <h3 style="font-size: 1.5rem; font-weight: 500; margin-bottom: 1rem;">Select a Date</h3>
+                        <p style="font-size: 1rem;">Choose a date from the calendar to view your daily internship diary entry.</p>
+                        <p style="font-size: 0.875rem; color: #6b7280; margin-top: 1rem;">Available entries: January 15 - May 23, 2025</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const markdownUrl = fileMap[dateKey];
+            if (!markdownUrl) {
+                viewer.innerHTML = `
+                    <div class="no-entry">
+                        <i class="far fa-calendar-alt"></i>
+                        <h3 style="font-size: 1.25rem; font-weight: 500; margin-bottom: 0.5rem;">No Entry Available</h3>
+                        <p>No diary entry has been recorded for this date yet.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const response = await fetch(markdownUrl);
+                if (!response.ok) {
+                    throw new Error(`Could not load ${markdownUrl}`);
+                }
+                const markdown = await response.text();
+                viewer.innerHTML = marked.parse(markdown);
+            } catch (error) {
+                viewer.innerHTML = `
+                    <div class="no-entry">
+                        <i class="far fa-calendar-alt"></i>
+                        <h3 style="font-size: 1.25rem; font-weight: 500; margin-bottom: 0.5rem;">Error</h3>
+                        <p>Error loading diary entry: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            const button = document.getElementById('themeToggle');
+            const icon = button.querySelector('.fas');
+            const text = button.querySelector('span');
+
+            if (body.getAttribute('data-theme') === 'light') {
+                body.removeAttribute('data-theme');
+                icon.className = 'fas fa-moon';
+                text.textContent = 'Dark Theme';
+            } else {
+                body.setAttribute('data-theme', 'light');
+                icon.className = 'fas fa-sun';
+                text.textContent = 'Light Theme';
+            }
+        }
+
+        // Initialize calendar
+        renderCalendar();
+        showMarkdown(null);
+    </script>
+</body>
+</html>
